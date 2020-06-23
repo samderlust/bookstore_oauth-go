@@ -2,6 +2,7 @@ package oauth
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -20,7 +21,7 @@ const (
 
 var (
 	oauthRestClient = rest.RequestBuilder{
-		BaseURL: "http://localhoast:8080",
+		BaseURL: "http://localhost:8080",
 		Timeout: 200 * time.Millisecond,
 	}
 )
@@ -61,6 +62,9 @@ func AuthenticateRequest(request *http.Request) *errors.RestErr {
 	}
 	at, err := getAccessToken(token)
 	if err != nil {
+		if err.Status == http.StatusNotFound {
+			return nil
+		}
 		return err
 	}
 	request.Header.Add(headerXCallerId, at.UserID)
@@ -78,7 +82,8 @@ func cleanRequest(request *http.Request) {
 }
 
 func getAccessToken(token string) (*accessToken, *errors.RestErr) {
-	response := oauthRestClient.Get("oauth/access_token/" + token)
+	fmt.Print("CALEED")
+	response := oauthRestClient.Get("/oauth/access_token/" + token)
 
 	if response == nil || response.Response == nil {
 		return nil, errors.NewInternalServerError("invalid restclient response when trying to get accesstoken")
@@ -90,6 +95,7 @@ func getAccessToken(token string) (*accessToken, *errors.RestErr) {
 		if err != nil {
 			return nil, errors.NewInternalServerError("invalid error interface when trying to get accesstoken")
 		}
+
 		return nil, &restErr
 	}
 	var at accessToken
